@@ -1,0 +1,19 @@
+{
+  "name": "lootbot",
+  "private": true,
+  "type": "module",
+  "workspaces": ["shared", "server"],
+  "scripts": {
+    "dev": "npm run dev -w server",
+    "start": "npm run start -w server",
+    "build": "npm run build -w web",
+    "test": "vitest run",
+    "typecheck": "tsc -p shared && tsc -p server"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
