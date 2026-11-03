@@ -8,6 +8,12 @@
     "start": "tsx src/main.ts"
   },
   "dependencies": {
-    "@lootbot/shared": "*"
+    "@lootbot/shared": "*",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/ws": "^8.5.13"
   }
 }
