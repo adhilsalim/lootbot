@@ -56,7 +56,10 @@ export function MatchTab({ state, send, adminKey }: Props) {
                 <td>
                   <TeamBadge agent={a} />
                 </td>
-                <td className="muted">{a.connected ? a.remote : "offline"}</td>
+                <td className="muted">
+                  {a.connected ? a.remote : "offline"}
+                  {a.connected && a.latencyMs !== null && <div className="small">live ping {a.latencyMs} ms</div>}
+                </td>
                 <td className="mono small">
                   {a.test.avgMs !== null && `${a.test.avgMs} ms avg / ${a.test.maxMs} ms worst`}
                   {a.test.detail.length > 0 && <div className="muted">{a.test.detail.join(" · ")}</div>}

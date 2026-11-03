@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
 import type { MapFile } from "@lootbot/shared";
-import { createApp } from "./app.js";
+import { createApp, type AppOptions } from "./app.js";
 
 export const testMap: MapFile = {
   name: "Test Room",
@@ -18,7 +18,7 @@ export const testMap: MapFile = {
 };
 
 /** Start a real server on a random port with a temp data folder. */
-export async function startTestApp() {
+export async function startTestApp(extra: Partial<AppOptions> = {}) {
   const root = mkdtempSync(path.join(tmpdir(), "lootbot-"));
   for (const d of ["maps", "matches", "uploads"]) mkdirSync(path.join(root, d));
   writeFileSync(path.join(root, "maps/test-room.json"), JSON.stringify(testMap));
@@ -28,6 +28,9 @@ export async function startTestApp() {
     joinCode: "ABCD",
     adminKey: "secret",
     timing: { perTeamMs: 10, countdownStepMs: 5, finishedHoldMs: 10 },
+    test: { pings: 5, replyTimeoutMs: 300, amberMs: 100, tickWindowMs: 100 },
+    pingEveryMs: 0,
+    ...extra,
   });
   return { app, root, url: `ws://localhost:${app.port}` };
 }
@@ -90,3 +93,37 @@ export class TestClient {
 }
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * A fake agent that behaves like the starter kit: answers pings, follows test requests
+ * in the practice room, and calls `brain` for real states. `delayMs` slows every reply.
+ */
+export class FakeAgent extends TestClient {
+  token: string | null = null;
+  delayMs = 0;
+  silent = false;
+  brain: (s: any) => { name: string; args: number[] } | null = () => null;
+  private testRequest: { name: string; args: number[] } | null = null;
+
+  constructor(url: string) {
+    super(url);
+    this.ws.on("message", (raw) => {
+      const m = JSON.parse(raw.toString());
+      if (this.silent) return;
+      const reply = (msg: unknown) => (this.delayMs ? setTimeout(() => this.send(msg), this.delayMs) : this.send(msg));
+      if (m.type === "joinResult" && m.token) this.token = m.token;
+      if (m.type === "ping") reply({ type: "pong", id: m.id });
+      if (m.type === "testRequest") this.testRequest = { name: m.name, args: m.args };
+      if (m.type === "state") {
+        let a: { name: string; args: number[] } | null;
+        if (m.practice) {
+          a = this.testRequest ?? { name: "idle", args: [1] };
+          this.testRequest = null;
+        } else {
+          a = this.brain(m);
+        }
+        if (a) reply({ type: "action", token: this.token, tick: m.tick, ...a });
+      }
+    });
+  }
+}

@@ -213,7 +213,7 @@ export class Lobby extends EventEmitter<LobbyEvents> {
     return [...this.agents.values()].filter((a) => a.status === "accepted");
   }
 
-  info(): AgentInfo[] {
+  info(latency: Map<string, number> = new Map()): AgentInfo[] {
     return [...this.agents.values()].map((a) => ({
       id: a.id,
       team: a.team,
@@ -221,6 +221,7 @@ export class Lobby extends EventEmitter<LobbyEvents> {
       connected: a.ws?.readyState === WebSocket.OPEN,
       remote: a.remote,
       test: a.test,
+      latencyMs: latency.get(a.id) ?? null,
       profile: a.profile,
       profileNotes: a.profileNotes,
     }));

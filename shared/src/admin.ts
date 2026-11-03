@@ -21,6 +21,8 @@ export interface AgentInfo {
   /** Address the agent connected from. */
   remote: string;
   test: ConnectionTestResult;
+  /** Round-trip time of the latest background ping. */
+  latencyMs: number | null;
   profile: TeamProfileView | null;
   /** Profile upload warnings shown in the approval preview. */
   profileNotes: string[];

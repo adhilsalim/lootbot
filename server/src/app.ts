@@ -15,6 +15,7 @@ import { colorFor } from "./teamColors.js";
 import { Lobby, randomJoinCode } from "./lobby.js";
 import { AdminHub } from "./adminHub.js";
 import { MapStore } from "./maps.js";
+import { ConnectionTester, type TestOptions } from "./connectionTest.js";
 
 export const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -24,6 +25,9 @@ export interface AppOptions {
   timing?: Partial<IntroTiming>;
   joinCode?: string;
   adminKey?: string;
+  test?: Partial<TestOptions>;
+  /** Milliseconds between background pings (0 = off). */
+  pingEveryMs?: number;
 }
 
 /** Handles one WebSocket path (e.g. `/ws/stage`). */
@@ -129,7 +133,7 @@ export async function createApp(opts: AppOptions = {}) {
     stage: match.stage,
     joinCode: lobby.joinCode,
     addresses: lanAddresses(port),
-    agents: lobby.info(),
+    agents: lobby.info(tester.latency),
     mapFile,
     map: match.map,
     rules: match.rules,
@@ -141,6 +145,37 @@ export async function createApp(opts: AppOptions = {}) {
   });
   const admin = new AdminHub(adminKey, adminState);
   routes.set("/ws/admin", (ws, req) => admin.connect(ws, req));
+
+  // ---------- connection test ----------
+  const tester = new ConnectionTester(lobby, opts.test, () => admin.changed());
+  const testing = new Set<string>();
+  const runTest = async (id: string) => {
+    const a = lobby.agents.get(id);
+    if (!a || a.status !== "accepted") throw new Error("Only accepted agents can be tested.");
+    if (!a.ws) throw new Error(`${a.team} is not connected.`);
+    if (match.stage !== "lobby" && match.stage !== "ready") throw new Error("Tests run only in the lobby or ready check.");
+    if (testing.has(id)) return;
+    testing.add(id);
+    const rules = match.rules;
+    if (rules && !opts.test?.tickWindowMs) tester.setTickWindow(1000 / rules.tickRate);
+    try {
+      await tester.run(a);
+    } finally {
+      testing.delete(id);
+    }
+  };
+  /** Tests run in the background so admin commands are not held up. */
+  const runTestInBackground = (id: string) => {
+    runTest(id).catch((e) => admin.broadcast({ type: "error", message: (e as Error).message }));
+  };
+  lobby.on("accepted", (a) => {
+    if (match.stage === "lobby" || match.stage === "ready") runTestInBackground(a.id);
+  });
+  match.on("stageChange", (stage) => {
+    if (stage !== "ready") return;
+    for (const a of lobby.accepted()) if (a.ws && a.test.status === "untested") runTestInBackground(a.id);
+  });
+  const pingTimer = opts.pingEveryMs === 0 ? null : setInterval(() => tester.pingAll(), opts.pingEveryMs ?? 5000);
   lobby.on("change", () => {
     syncProfiles();
     admin.changed();
@@ -217,6 +252,11 @@ export async function createApp(opts: AppOptions = {}) {
     syncProfiles();
     match.start(ready.map((a) => ({ carId: a.id, team: a.team })));
   });
+  admin.on("runTest", (c) => {
+    const a = lobby.agents.get(c.id);
+    if (!a?.ws) throw new Error("Agent is not connected.");
+    runTestInBackground(c.id);
+  });
   admin.on("skipIntro", () => match.skipIntro());
   admin.on("pause", () => match.pause());
   admin.on("resume", () => match.resume());
@@ -253,6 +293,8 @@ export async function createApp(opts: AppOptions = {}) {
     bots,
     lobby,
     admin,
+    tester,
+    runTest,
     maps,
     profiles,
     port,
@@ -272,6 +314,7 @@ export async function createApp(opts: AppOptions = {}) {
     close: () =>
       new Promise<void>((resolve) => {
         match.abort();
+        if (pingTimer) clearInterval(pingTimer);
         for (const ws of wss.clients) ws.terminate();
         http.close(() => resolve());
       }),
