@@ -147,3 +147,31 @@ table.teams td.actions button { margin-left: 6px; }
 .toast { padding: 10px 14px; border-radius: 8px; background: var(--panel-2); max-width: 420px; box-shadow: 0 4px 20px #0008; }
 .toast.error { border-left: 4px solid var(--red); }
 .toast.info { border-left: 4px solid var(--green); }
+.builder { display: grid; grid-template-columns: 240px 1fr 320px; gap: 16px; align-items: start; }
+.map-list ul { list-style: none; padding: 0; margin: 10px 0 0; }
+.map-list li { display: flex; align-items: center; border-radius: 6px; }
+.map-list li.active { background: var(--panel-2); }
+.map-list .row-actions { display: flex; gap: 2px; }
+.map-list .row-actions button { padding: 2px 6px; font-size: 12px; }
+button.link { background: none; border: none; text-align: left; flex: 1; padding: 6px; }
+button.wide { width: 100%; }
+.editor-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.map-name { font-size: 18px; font-weight: 600; width: 280px; }
+input.size { width: 56px; }
+.brushes { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.brushes button { display: inline-flex; align-items: center; gap: 6px; }
+.brushes button.active { border-color: var(--accent); background: #3a3420; }
+.swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; border: 1px solid #fff3; }
+.grid-box { overflow: auto; }
+.grid-box canvas { display: block; cursor: crosshair; border-radius: 4px; }
+.rules { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.rules > label { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; }
+.rules > label.changed > span:first-child { color: var(--accent); }
+.rules .rule-input { display: inline-flex; align-items: center; gap: 6px; }
+.rules input[type="number"] { width: 72px; }
+.rules .never { font-size: 12px; color: var(--muted); }
+.validation { border-radius: 8px; padding: 10px; font-size: 14px; }
+.validation.ok { background: #1d3527; }
+.validation.bad { background: #3a1f1f; }
+.validation ul { margin: 6px 0 0; padding-left: 18px; }
+.validation .warn { color: var(--amber); }

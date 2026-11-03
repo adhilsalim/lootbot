@@ -8,7 +8,7 @@ import type { Duplex } from "node:stream";
 import express from "express";
 import QRCode from "qrcode";
 import { WebSocketServer, WebSocket } from "ws";
-import type { AdminState, MapFile, ServerToStage, TeamProfileView } from "@lootbot/shared";
+import { validateMap, type AdminState, type MapFile, type ServerToStage, type TeamProfileView } from "@lootbot/shared";
 import { Match, type IntroTiming } from "./match.js";
 import { BotRunner } from "./botRunner.js";
 import { colorFor } from "./teamColors.js";
@@ -276,6 +276,53 @@ export async function createApp(opts: AppOptions = {}) {
     const svg = await QRCode.toString(String(req.query.text ?? ""), { type: "svg", margin: 1 });
     res.type("image/svg+xml").send(svg);
   });
+  // Map builder.
+  const expectedTeams = () => Math.max(2, lobby.accepted().length);
+  const wrap = (fn: (req: express.Request, res: express.Response) => Promise<unknown>) =>
+    (req: express.Request, res: express.Response) =>
+      fn(req, res).catch((e: Error) => res.status(400).json({ error: e.message }));
+  ex.get("/api/admin/maps", admin.guard, wrap(async (_req, res) => res.json(await maps.list())));
+  ex.get("/api/admin/maps/:file", admin.guard, wrap(async (req, res) => res.json(await maps.load(req.params.file))));
+  ex.post("/api/admin/validate", admin.guard, (req, res) => res.json(validateMap(req.body.map, req.body.expectedTeams ?? expectedTeams())));
+  ex.post("/api/admin/maps", admin.guard, wrap(async (req, res) => {
+    const { map, file } = req.body as { map: MapFile; file?: string };
+    const v = validateMap(map, expectedTeams());
+    if (!v.ok) return res.status(400).json({ error: v.errors.join(" "), validation: v });
+    const saved = await maps.save(map, file);
+    await refreshMaps();
+    if (saved === mapFile && (match.stage === "lobby" || match.stage === "ready")) await selectMap(saved);
+    res.json({ file: saved, validation: v });
+  }));
+  ex.post("/api/admin/maps/:file/duplicate", admin.guard, wrap(async (req, res) => {
+    const map = await maps.load(req.params.file);
+    const existing = new Set((await maps.list()).map((m) => m.file));
+    let n = 2;
+    let name = `${map.name} (copy)`;
+    while (existing.has(MapStore.fileFor(name))) name = `${map.name} (copy ${n++})`;
+    const file = await maps.save({ ...map, name }, undefined, true);
+    await refreshMaps();
+    res.json({ file });
+  }));
+  ex.post("/api/admin/maps/:file/rename", admin.guard, wrap(async (req, res) => {
+    const name = String(req.body.name ?? "").trim();
+    if (!name) throw new Error("Name required.");
+    const map = await maps.load(req.params.file);
+    const file = MapStore.fileFor(name);
+    if (file !== req.params.file && (await maps.list()).some((m) => m.file === file)) throw new Error("A map with that name exists.");
+    await maps.save({ ...map, name }, file, true);
+    if (file !== req.params.file) await maps.remove(req.params.file);
+    if (mapFile === req.params.file) mapFile = file;
+    await refreshMaps();
+    res.json({ file });
+  }));
+  ex.delete("/api/admin/maps/:file", admin.guard, wrap(async (req, res) => {
+    if (mapFile === req.params.file && match.stage !== "lobby") throw new Error("That map is in use.");
+    await maps.remove(req.params.file);
+    if (mapFile === req.params.file) mapFile = null;
+    await refreshMaps();
+    res.json({ ok: true });
+  }));
+
   ex.use("/uploads", express.static(dirs.uploads, { maxAge: "1h" }));
   if (existsSync(dirs.web)) {
     ex.use(express.static(dirs.web));
