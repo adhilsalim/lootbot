@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAdmin, useAdminKey } from "./useAdmin";
 import { MatchTab } from "./MatchTab";
 import { MapBuilder } from "./MapBuilder";
+import { ReplaysTab } from "./ReplaysTab";
 
 type Tab = "match" | "maps" | "replays";
 
@@ -34,7 +35,7 @@ export function AdminPage() {
       ) : tab === "maps" ? (
         <MapBuilder adminKey={key} state={admin.state} send={admin.send} toast={admin.toast} />
       ) : (
-        <p className="muted">Coming soon.</p>
+        <ReplaysTab adminKey={key} state={admin.state} send={admin.send} toast={admin.toast} />
       )}
 
       <div className="toasts">

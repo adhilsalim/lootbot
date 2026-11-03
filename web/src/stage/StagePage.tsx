@@ -28,6 +28,7 @@ export function StagePage() {
   const [soundOn, setSoundOn] = useState(false);
   const engine = useMemo(() => new AudioEngine(), []);
   const playingId = useRef<number | null>(null);
+  const [replay, setReplay] = useState<Extract<ServerToStage, { type: "replay" }> | null>(null);
 
   useEffect(() => {
     if (!stats) return setShowWinner(false);
@@ -112,6 +113,10 @@ export function StagePage() {
       case "volume":
         engine.setVolume(msg.value);
         break;
+      case "replay":
+        setReplay(msg.active ? msg : null);
+        if (msg.active) setStats(null);
+        break;
     }
   });
 
@@ -139,7 +144,10 @@ export function StagePage() {
   return (
     <div className="stage">
       <header className="stage-top">
-        <div className="stage-title">{map?.name ?? "Lootbot"}</div>
+        <div className="stage-title">
+          {replay && <span className="replay-badge">REPLAY{replay.speed === 2 ? " 2×" : ""}</span>}
+          {map?.name ?? "Lootbot"}
+        </div>
         <div className={`stage-timer ${world && world.timeLeft <= 30 && (stage === "running" || stage === "paused") ? "low" : ""}`}>
           {world ? formatTime(world.timeLeft) : rules ? formatTime(rules.matchSeconds) : "--:--"}
         </div>
@@ -171,6 +179,12 @@ export function StagePage() {
         </div>
         <Scoreboard world={world} profiles={profileMap} />
       </main>
+
+      {replay && replay.totalTicks ? (
+        <div className="replay-progress">
+          <div style={{ width: `${((world?.tick ?? 0) / replay.totalTicks) * 100}%` }} />
+        </div>
+      ) : null}
 
       {!soundOn && (
         <button className="enable-sound" onClick={() => engine.enable().then(() => setSoundOn(engine.enabled))}>

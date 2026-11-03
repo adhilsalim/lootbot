@@ -19,6 +19,7 @@ import { ConnectionTester, type TestOptions } from "./connectionTest.js";
 import { listMatches, loadMeta, MatchLogger, statsCsv } from "./matchLog.js";
 import multer from "multer";
 import { AudioQueue, entriesFromEvents } from "./audioQueue.js";
+import { ReplayPlayer } from "./replay.js";
 import { CLIP_FIELDS, IMAGE_FIELDS, IMAGE_MAX_BYTES, ProfileError, ProfileStore, fieldLabel, toView } from "./profiles.js";
 
 export const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -74,6 +75,7 @@ export async function createApp(opts: AppOptions = {}) {
   let testRun = false;
   let volume = 0.8;
   let colorIndex = 0;
+  let replay: ReplayPlayer | null = null;
 
   const logger = new MatchLogger(dirs.matches, match, (team) => profiles.get(team) ?? null);
 
@@ -113,6 +115,7 @@ export async function createApp(opts: AppOptions = {}) {
     if (match.world) send({ type: "world", world: match.world.view() });
     const intro = match.introMessage();
     if (intro) send(intro);
+    if (replay) return replay.sendSetup(send);
     if (match.stage === "stats" && match.lastStats) {
       send({ type: "stats", stats: match.lastStats, winner: match.lastStats[0]?.team ?? null });
     }
@@ -175,6 +178,7 @@ export async function createApp(opts: AppOptions = {}) {
     volume,
     stats: match.lastStats,
     testRun,
+    replay: replay?.status ?? null,
   });
   const admin = new AdminHub(adminKey, adminState);
   routes.set("/ws/admin", (ws, req) => admin.connect(ws, req));
@@ -268,6 +272,50 @@ export async function createApp(opts: AppOptions = {}) {
   };
   match.on("end", () => {
     if (testRun) bots.clear();
+  });
+
+  // ---------- replays ----------
+  /** Send the live match back to the stage screens after a replay. */
+  const resendLive = () => {
+    broadcastStage({ type: "map", map: match.map, rules: match.rules });
+    broadcastStage({ type: "profiles", profiles: [...profiles.values()] });
+    broadcastStage({ type: "stage", stage: match.stage });
+    if (match.world) broadcastStage({ type: "world", world: match.world.view() });
+    if (match.stage === "stats" && match.lastStats) {
+      broadcastStage({ type: "stats", stats: match.lastStats, winner: match.lastStats[0]?.team ?? null });
+    }
+  };
+  const stopReplay = () => {
+    if (!replay) return;
+    replay.stop();
+    replay = null;
+    resendLive();
+  };
+  admin.on("replay", async (c) => {
+    if (!["lobby", "ready", "stats"].includes(match.stage)) throw new Error("Replays can only play between matches.");
+    stopReplay();
+    audio.clear();
+    const r = new ReplayPlayer(dirs.matches, broadcastStage, () => admin.changed());
+    replay = r;
+    try {
+      await r.load(c.name);
+    } catch (e) {
+      replay = null;
+      resendLive();
+      throw new Error(`Could not load replay: ${(e as Error).message}`);
+    }
+  });
+  admin.on("replayControl", async (c) => {
+    if (!replay) throw new Error("No replay loaded.");
+    if (c.action === "play") replay.play();
+    else if (c.action === "pause") replay.pause();
+    else if (c.action === "speed") replay.setSpeed(c.value ?? 1);
+    else if (c.action === "seek") await replay.seek(c.value ?? 0);
+    else if (c.action === "stop") stopReplay();
+  });
+  // A live match takes the stage back from any replay.
+  match.on("stageChange", (stage) => {
+    if (stage !== "lobby" && stage !== "stats") stopReplay();
   });
 
   admin.on("accept", (c) => lobby.accept(c.id));

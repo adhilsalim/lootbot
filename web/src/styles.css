@@ -235,3 +235,11 @@ a.button:hover { border-color: var(--accent); }
 .un-item.p1 { box-shadow: inset 0 0 0 2px var(--red); }
 .un-item.p2 { box-shadow: inset 0 0 0 2px var(--amber); }
 .un-item img, .un-item .np-dot { width: 26px; height: 26px; font-size: 12px; }
+
+/* ---------- replays ---------- */
+.replays { display: flex; flex-direction: column; gap: 16px; }
+.timeline { width: 100%; margin-top: 10px; }
+.active-speed { border-color: var(--accent); background: #3a3420; }
+.replay-badge { background: var(--red); color: #fff; font-size: 14px; font-weight: 800; padding: 3px 8px; border-radius: 5px; margin-right: 10px; letter-spacing: 1px; vertical-align: middle; }
+.replay-progress { position: fixed; left: 0; right: 0; bottom: 0; height: 6px; background: #0008; z-index: 5; }
+.replay-progress div { height: 100%; background: var(--red); transition: width 0.1s linear; }

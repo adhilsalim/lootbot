@@ -28,6 +28,14 @@ export interface AgentInfo {
   profileNotes: string[];
 }
 
+export interface ReplayStatus {
+  name: string;
+  tick: number;
+  totalTicks: number;
+  playing: boolean;
+  speed: number;
+}
+
 export interface MatchSummary {
   /** Folder name under `matches/`. */
   name: string;
@@ -57,6 +65,8 @@ export interface AdminState {
   volume: number;
   stats: RankedStats[] | null;
   testRun: boolean;
+  /** Set while a saved match is playing back on the stage. */
+  replay: ReplayStatus | null;
 }
 
 export type AdminCommand =
