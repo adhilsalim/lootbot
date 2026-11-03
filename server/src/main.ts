@@ -14,10 +14,14 @@ console.log(`Lootbot server running.
 // Lets `npm run host-agent` find this server without asking for the key.
 writeFileSync(path.join(app.dirs.root, ".lootbot-host.json"), JSON.stringify({ port: app.port, adminKey: app.adminKey }));
 
-// `--demo [map.json]`: start a test run straight away with built-in bots, for checking the stage screen.
+// `--demo [map.json]`: start a test run straight away with built-in bots (first saved map by default).
 const demoIdx = process.argv.indexOf("--demo");
 if (demoIdx !== -1) {
-  const file = process.argv[demoIdx + 1] ?? "level-1-open-field.json";
+  const file = process.argv[demoIdx + 1] ?? (await app.maps.list())[0]?.file;
+  if (!file) {
+    console.error("No maps yet: build one in the admin page's map builder, then run the demo again.");
+    process.exit(1);
+  }
   await app.startTestRun(file, 600);
   console.log(`Demo match started on ${file}.`);
 }

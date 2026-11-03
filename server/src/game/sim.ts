@@ -1,13 +1,17 @@
 /**
  * Terminal simulation: runs built-in bots on a map with no network and no graphics.
- *   npx tsx server/src/game/sim.ts [maps/level1.json] [teams=4] [seconds=60]
+ *   npx tsx server/src/game/sim.ts maps/<map>.json [teams=4] [seconds=60]
  */
 import { readFileSync } from "node:fs";
 import { cellKey, wallSet, type MapFile } from "@lootbot/shared";
 import { rankStats, World } from "./world.js";
 import { wanderBot } from "./bots.js";
 
-const [mapPath = "maps/level-1-open-field.json", teamsArg = "4", secondsArg = "60"] = process.argv.slice(2);
+const [mapPath, teamsArg = "4", secondsArg = "60"] = process.argv.slice(2);
+if (!mapPath) {
+  console.error("Usage: npx tsx server/src/game/sim.ts maps/<map>.json [teams] [seconds]");
+  process.exit(2);
+}
 const map: MapFile = JSON.parse(readFileSync(mapPath, "utf8"));
 const world = new World(map, { matchSeconds: Number(secondsArg) });
 const names = ["Falcon", "Eagle", "Hawk", "Owl", "Kite", "Raven", "Swift", "Heron"];

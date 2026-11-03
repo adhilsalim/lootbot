@@ -42,10 +42,10 @@ It takes over the team's existing car (same token), connects to `ws://localhost`
 ```bash
 npm run dev -w server      # server with reload (port 8080)
 npm run dev -w web         # Vite dev server on :5173, proxies to the game server
-npm run demo               # start a test run with built-in bots straight away
+npm run demo               # test run with built-in bots on the first saved map
 npm test                   # server and shared tests
 npm run typecheck
-npx tsx server/src/game/sim.ts maps/level-1-open-field.json 4 60   # terminal simulation, no graphics
+npx tsx server/src/game/sim.ts maps/<map>.json 4 60   # terminal simulation, no graphics
 
 cd kits/python && python -m venv .venv && .venv/bin/pip install -e ".[test]" && .venv/bin/pytest
 ```
