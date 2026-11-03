@@ -9,3 +9,5 @@ uploads/*
 __pycache__/
 *.egg-info/
 .venv/
+.lootbot-token-*
+.pytest_cache/
