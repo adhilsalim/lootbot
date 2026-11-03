@@ -73,14 +73,18 @@ class Car:
         profile: Optional[Dict[str, Any]] = None,
         token_file: Optional[Union[str, Path]] = None,
     ):
-        self.server = (server or os.environ.get("LOOTBOT_SERVER") or "ws://localhost:8080").rstrip("/")
+        # LOOTBOT_SERVER_OVERRIDE lets the host run a team's unchanged code on the game laptop.
+        self.server = (
+            os.environ.get("LOOTBOT_SERVER_OVERRIDE") or server or os.environ.get("LOOTBOT_SERVER") or "ws://localhost:8080"
+        ).rstrip("/")
         self.join_code = join_code or os.environ.get("LOOTBOT_JOIN_CODE") or ""
         self.team = team or os.environ.get("LOOTBOT_TEAM") or ""
         if not self.team:
             raise ValueError("Give your car a team name: Car(team='Falcon') or set LOOTBOT_TEAM.")
         self.profile = profile
         safe = "".join(c if c.isalnum() else "_" for c in self.team)
-        self.token_file = Path(token_file) if token_file else Path(f".lootbot-token-{safe}")
+        env_token_file = os.environ.get("LOOTBOT_TOKEN_FILE")
+        self.token_file = Path(env_token_file or token_file or f".lootbot-token-{safe}")
 
         #: Latest state from the server (``None`` until the first tick).
         self.state: Optional[State] = None

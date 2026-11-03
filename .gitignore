@@ -11,3 +11,5 @@ __pycache__/
 .venv/
 .lootbot-token-*
 .pytest_cache/
+.lootbot-host.json
+hostrun/

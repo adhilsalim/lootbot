@@ -436,6 +436,13 @@ export async function createApp(opts: AppOptions = {}) {
     });
   });
 
+  // Host-run fallback: the host takes a team's token to run its agent on this laptop.
+  ex.get("/api/admin/agent-token", admin.guard, (req, res) => {
+    const team = String(req.query.team ?? "").toLowerCase();
+    const a = lobby.accepted().find((x) => x.team.toLowerCase() === team);
+    res.json({ joinCode: lobby.joinCode, token: a?.token ?? null, team: a?.team ?? null });
+  });
+
   // Match logs and stats.
   ex.get("/api/admin/matches", admin.guard, wrap(async (_req, res) => res.json(await listMatches(dirs.matches))));
   ex.get("/api/admin/stats.csv", admin.guard, wrap(async (req, res) => {

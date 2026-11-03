@@ -1,3 +1,5 @@
+import { writeFileSync } from "node:fs";
+import path from "node:path";
 import { createApp, lanAddresses } from "./app.js";
 
 const port = Number(process.env.PORT ?? 8080);
@@ -8,6 +10,9 @@ console.log(`Lootbot server running.
   Stage screen: http://localhost:${app.port}/stage
   Agents:       ${lan.join("  ")}
   Join code:    ${app.lobby.joinCode}`);
+
+// Lets `npm run host-agent` find this server without asking for the key.
+writeFileSync(path.join(app.dirs.root, ".lootbot-host.json"), JSON.stringify({ port: app.port, adminKey: app.adminKey }));
 
 // `--demo [map.json]`: start a test run straight away with built-in bots, for checking the stage screen.
 const demoIdx = process.argv.indexOf("--demo");
