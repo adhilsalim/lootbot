@@ -28,6 +28,17 @@ export interface AgentInfo {
   profileNotes: string[];
 }
 
+export interface MatchSummary {
+  /** Folder name under `matches/`. */
+  name: string;
+  map: string;
+  startedAt: string;
+  endReason: string | null;
+  totalTicks: number | null;
+  teams: string[];
+  winner: string | null;
+}
+
 export interface MapListEntry { file: string; name: string; width: number; height: number }
 
 /** Everything the admin page shows. Sent whenever something changes. */

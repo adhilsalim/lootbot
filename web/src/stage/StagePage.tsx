@@ -1,8 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { MapFile, MatchStage, RankedStats, Rules, ServerToStage, StageToServer, TeamProfileView, WorldView } from "@lootbot/shared";
 import { formatTime, useSocket } from "../lib/socket";
 import { MazeCanvas } from "./MazeCanvas";
 import { Scoreboard } from "./Scoreboard";
+import { StatsScreen } from "./StatsScreen";
+import { WinnerScreen } from "./WinnerScreen";
+
+/** How long the stats table shows before the winner screen, unless the host skips ahead. */
+const STATS_MS = 12000;
 
 export function StagePage() {
   const [stage, setStage] = useState<MatchStage>("lobby");
@@ -12,6 +17,13 @@ export function StagePage() {
   const [world, setWorld] = useState<WorldView | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [stats, setStats] = useState<{ stats: RankedStats[]; winner: string | null } | null>(null);
+  const [showWinner, setShowWinner] = useState(false);
+
+  useEffect(() => {
+    if (!stats) return setShowWinner(false);
+    const t = setTimeout(() => setShowWinner(true), STATS_MS);
+    return () => clearTimeout(t);
+  }, [stats]);
 
   const { connected } = useSocket<ServerToStage, StageToServer>("/ws/stage", (msg) => {
     switch (msg.type) {
@@ -45,6 +57,9 @@ export function StagePage() {
         break;
       case "stats":
         setStats({ stats: msg.stats, winner: msg.winner });
+        break;
+      case "showWinner":
+        setShowWinner(true);
         break;
     }
   });
@@ -83,8 +98,11 @@ export function StagePage() {
 
       {stage === "stats" && stats && (
         <div className="overlay full">
-          <h1>Results</h1>
-          <p>Winner: {stats.winner ?? "—"}</p>
+          {showWinner ? (
+            <WinnerScreen winner={stats.stats[0]} profile={profileMap.get(stats.stats[0]?.team)} />
+          ) : (
+            <StatsScreen stats={stats.stats} profiles={profileMap} />
+          )}
         </div>
       )}
     </div>

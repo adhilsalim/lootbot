@@ -23,7 +23,15 @@ export interface ReceivedAction {
   args: number[];
 }
 
+/** Something that changed the world between ticks, other than an action (logged for replays). */
+export type WorldOp =
+  | { op: "stop"; carId: string }
+  | { op: "connected"; carId: string; connected: boolean }
+  | { op: "remove"; carId: string };
+
 export interface MatchEvents {
+  /** A between-tick change: stop, disconnect/reconnect or kick. */
+  op: [op: WorldOp];
   /** A message for one agent. */
   agent: [carId: string, msg: ServerToAgent];
   /** A message for every stage screen. */
@@ -173,9 +181,9 @@ export class Match extends EventEmitter<MatchEvents> {
     this.stopTicks();
     this.clearStageTimers();
     if (this.world) this.broadcastEvent("gameEnded", { reason: "aborted" });
+    this.emit("abort");
     this.world = null;
     this.pending.clear();
-    this.emit("abort");
     this.setStage("lobby");
   }
 
@@ -190,11 +198,13 @@ export class Match extends EventEmitter<MatchEvents> {
     if (!this.world || (this.stage !== "running" && this.stage !== "paused")) return;
     const ev = this.world.stop(carId);
     if (ev && ev.kind === "actionResult") {
+      this.emit("op", { op: "stop", carId });
       this.emit("agent", carId, { type: "actionResult", tick: this.world.tick, name: ev.name, result: ev.result, stopped: true });
     }
   }
 
   setConnected(carId: string, connected: boolean) {
+    if (this.world?.getCar(carId)) this.emit("op", { op: "connected", carId, connected });
     this.world?.setConnected(carId, connected);
     this.pending.delete(carId);
   }
@@ -204,6 +214,7 @@ export class Match extends EventEmitter<MatchEvents> {
     this.teams = this.teams.filter((t) => t.carId !== carId);
     this.pending.delete(carId);
     if (!this.world) return;
+    if (this.world.getCar(carId)) this.emit("op", { op: "remove", carId });
     this.world.removeCar(carId);
     if (this.stage === "running" || this.stage === "paused" || this.stage === "intro") {
       this.emit("stage", { type: "world", world: this.world.view() });

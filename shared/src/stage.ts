@@ -95,6 +95,7 @@ export type ServerToStage =
   | { type: "world"; world: WorldView }
   | { type: "countdown"; value: number }
   | { type: "stats"; stats: RankedStats[]; winner: string | null }
+  | { type: "showWinner" }
   | { type: "audioPlay"; entry: AudioEntry }
   | { type: "audioQueue"; upNext: AudioEntry[] }
   | { type: "audioPause"; paused: boolean }

@@ -33,7 +33,25 @@ export function MatchTab({ state, send, adminKey }: Props) {
         </div>
       </section>
 
-      <MatchControls state={state} send={send} />
+      <MatchControls state={state} send={send} adminKey={adminKey} />
+
+      {state.stats && (state.stage === "finished" || state.stage === "stats") && (
+        <section className="card">
+          <h2>Result</h2>
+          <table className="teams">
+            <tbody>
+              {state.stats.map((s) => (
+                <tr key={s.team}>
+                  <td>{s.rank}</td>
+                  <td><b>{s.team}</b></td>
+                  <td>🎁 {s.gifts}</td>
+                  <td className="muted">{s.deaths} deaths · {s.hitsLanded} hits · {s.kills} kills</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       <section className="card">
         <h2>Pending requests {pending.length > 0 && <span className="badge">{pending.length}</span>}</h2>
@@ -133,7 +151,7 @@ function PendingAgent({ agent, send }: { agent: AgentInfo; send: Props["send"] }
   );
 }
 
-function MatchControls({ state, send }: { state: AdminState; send: Props["send"] }) {
+function MatchControls({ state, send, adminKey }: Props) {
   const [minutes, setMinutes] = useState<string>("");
   const stage = state.stage;
   const editable = stage === "lobby" || stage === "ready";
@@ -207,6 +225,10 @@ function MatchControls({ state, send }: { state: AdminState; send: Props["send"]
           <button className="danger" onClick={() => confirm("Abort the match? There will be no result.") && send({ type: "abort" })}>
             Abort
           </button>
+        )}
+        {stage === "stats" && <button onClick={() => send({ type: "showWinner" })}>Show winner</button>}
+        {(stage === "finished" || stage === "stats") && state.stats && !state.testRun && (
+          <a className="button" href={`/api/admin/stats.csv?key=${encodeURIComponent(adminKey)}`} download>Download stats CSV</a>
         )}
         {(stage === "finished" || stage === "stats") && (
           <button onClick={() => send({ type: "toLobby" })}>New match</button>

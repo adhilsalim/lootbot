@@ -16,6 +16,7 @@ import { Lobby, randomJoinCode } from "./lobby.js";
 import { AdminHub } from "./adminHub.js";
 import { MapStore } from "./maps.js";
 import { ConnectionTester, type TestOptions } from "./connectionTest.js";
+import { listMatches, loadMeta, MatchLogger, statsCsv } from "./matchLog.js";
 
 export const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -70,6 +71,8 @@ export async function createApp(opts: AppOptions = {}) {
   let testRun = false;
   let volume = 0.8;
   let colorIndex = 0;
+
+  const logger = new MatchLogger(dirs.matches, match, (team) => profiles.get(team) ?? null);
 
   // ---------- WebSocket routing by path ----------
   const routes = new Map<string, SocketHandler>();
@@ -208,6 +211,7 @@ export async function createApp(opts: AppOptions = {}) {
   const endTestRun = () => {
     if (!testRun) return;
     testRun = false;
+    logger.enabled = true;
     bots.clear();
     syncProfiles();
   };
@@ -219,6 +223,7 @@ export async function createApp(opts: AppOptions = {}) {
     match.setMap(map, { matchSeconds: seconds });
     mapFile = file;
     testRun = true;
+    logger.enabled = false;
     bots.clear();
     profiles.clear();
     const names = ["Bot Falcon", "Bot Eagle", "Bot Hawk", "Bot Owl"].slice(0, Math.min(4, map.spawns.length));
@@ -265,6 +270,10 @@ export async function createApp(opts: AppOptions = {}) {
     endTestRun();
   });
   admin.on("testRun", (c) => startTestRun(c.file));
+  admin.on("showWinner", () => {
+    if (match.stage !== "stats") throw new Error("The winner screen comes after the stats.");
+    broadcastStage({ type: "showWinner" });
+  });
   admin.on("volume", (c) => {
     volume = Math.max(0, Math.min(1, c.value));
     broadcastStage({ type: "volume", value: volume });
@@ -323,6 +332,16 @@ export async function createApp(opts: AppOptions = {}) {
     res.json({ ok: true });
   }));
 
+  // Match logs and stats.
+  ex.get("/api/admin/matches", admin.guard, wrap(async (_req, res) => res.json(await listMatches(dirs.matches))));
+  ex.get("/api/admin/stats.csv", admin.guard, wrap(async (req, res) => {
+    const name = req.query.match ? String(req.query.match) : null;
+    const stats = name ? (await loadMeta(dirs.matches, name)).result : match.lastStats;
+    if (!stats) throw new Error("No finished match yet.");
+    const file = `${name ?? logger.current ?? "match"}-stats.csv`;
+    res.type("text/csv").attachment(file).send(statsCsv(stats));
+  }));
+
   ex.use("/uploads", express.static(dirs.uploads, { maxAge: "1h" }));
   if (existsSync(dirs.web)) {
     ex.use(express.static(dirs.web));
@@ -342,6 +361,7 @@ export async function createApp(opts: AppOptions = {}) {
     admin,
     tester,
     runTest,
+    logger,
     maps,
     profiles,
     port,

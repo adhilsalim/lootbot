@@ -175,3 +175,35 @@ input.size { width: 56px; }
 .validation.bad { background: #3a1f1f; }
 .validation ul { margin: 6px 0 0; padding-left: 18px; }
 .validation .warn { color: var(--amber); }
+a.button { display: inline-block; text-decoration: none; background: var(--panel-2); color: var(--text); border: 1px solid #343b50; border-radius: 6px; padding: 6px 12px; }
+a.button:hover { border-color: var(--accent); }
+
+/* ---------- stats & winner ---------- */
+.stats-screen { width: min(1400px, 94vw); text-align: center; }
+.stats-screen h1 { font-size: 56px; margin: 0 0 24px; }
+.stats-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; font-size: 24px; }
+.stats-table th { color: var(--muted); font-weight: 500; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; padding: 0 12px; }
+.stats-table td { background: var(--panel); padding: 14px 12px; font-variant-numeric: tabular-nums; }
+.stats-table tr { animation: slidein 0.6s both; }
+.stats-table td:first-child { border-radius: 10px 0 0 10px; }
+.stats-table td:last-child { border-radius: 0 10px 10px 0; }
+.stats-table .left { text-align: left; }
+.stats-table .rank { font-weight: 800; font-size: 28px; }
+.stats-table .team { display: flex; align-items: center; gap: 12px; font-weight: 700; }
+.stats-table .team img, .dot-lg { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; display: inline-block; }
+@keyframes slidein { from { opacity: 0; transform: translateY(30px); } }
+
+.winner-screen { display: flex; flex-direction: column; align-items: center; gap: 16px; position: relative; width: 100%; height: 100%; justify-content: center; overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--team) 35%, transparent), transparent 70%); }
+.winner-label { font-size: 32px; letter-spacing: 12px; text-transform: uppercase; color: var(--accent); }
+.winner-name { font-size: 110px; font-weight: 900; display: flex; align-items: center; gap: 30px; animation: pop 1s ease-out; text-shadow: 0 6px 40px #000; }
+.winner-icon { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 6px solid var(--team); }
+.winner-gifts { font-size: 36px; }
+.crew { display: flex; gap: 24px; margin-top: 20px; align-items: flex-end; }
+.crew figure { margin: 0; text-align: center; animation: slidein 0.8s both; }
+.crew img { width: 170px; height: 170px; object-fit: cover; border-radius: 16px; border: 4px solid var(--team); }
+.crew .driver img { width: 230px; height: 230px; }
+.crew figcaption { margin-top: 6px; color: var(--muted); font-size: 18px; }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti i { position: absolute; top: -20px; width: 10px; height: 18px; border-radius: 2px; animation: fall 4.2s linear infinite; opacity: 0.85; }
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
