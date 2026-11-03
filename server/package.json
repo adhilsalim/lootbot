@@ -10,10 +10,12 @@
   "dependencies": {
     "@lootbot/shared": "*",
     "express": "^4.21.2",
+    "qrcode": "^1.5.4",
     "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
+    "@types/qrcode": "^1.5.5",
     "@types/ws": "^8.5.13"
   }
 }
