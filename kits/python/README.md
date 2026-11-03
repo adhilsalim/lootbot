@@ -100,6 +100,45 @@ Rules of thumb:
 - **`brain` isn't called while your car is dead.** It resumes after you respawn.
 - **Errors don't stop your program.** An exception in `brain` is printed, and `brain` is called again on the next tick.
 
+### Reacting in the middle of an action
+
+A long action doesn't make your car deaf. Events (see [section 7](#7-events)) arrive the moment something happens, even halfway through `move(10)`. An event handler can call `await car.stop()` to cancel the running move or turn on the spot, and then act.
+
+```python
+TURN_TO_FACE = {"front": 0, "right": 90, "back": 180, "left": -90}
+
+@car.on("hit")
+async def shot_at(e):
+    await car.stop()                  # cancel the move right now
+    if TURN_TO_FACE[e.side]:
+        await car.turn(TURN_TO_FACE[e.side])   # face the shooter
+    if car.state.fireReady:
+        await car.fire()              # and shoot back
+
+async def brain(state):
+    moved = await car.move(10)
+    if moved < 10:
+        return                        # interrupted (blocked or stopped): rethink next tick
+    ...
+```
+
+Here is what happened when this ran against the real server:
+
+```text
+tick 0    brain calls move(10)
+tick 1-6  moving
+tick 7    "hit" event arrives (from the front) -> handler calls car.stop(); the car halts at once
+tick 8    car.move(10) returns 8 in brain; the handler's actions go next
+tick 8-   handler turns if needed, then fires back
+```
+
+What to know:
+
+- **`stop()` takes effect immediately.** It doesn't wait its turn behind the running action.
+- **The cancelled action still returns**, with what it managed so far: the cells moved, or the heading reached. Check the result in `brain` so you notice the interruption.
+- **The handler's actions run before `brain`'s next ones.** Actions run in the order they were asked for, and the handler asked first.
+- **Without `stop()`, a handler's action waits** until the current one finishes. That's fine for `collectGift()` on arrival, but too slow for dodging or shooting back.
+
 ## 4. The world: grid, headings and sight
 
 The maze is a grid of square cells. `(0, 0)` is the **top-left** cell; `x` grows to the right and `y` grows **downward**. Each cell is either open floor or wall. Walls fill whole cells, and the outer border is always wall, so the cells you can drive on start at `(1, 1)`. You aren't told the map's size: you find the walls by looking.
@@ -212,11 +251,13 @@ Events arrive the moment something happens, even while an action is running. Reg
 | `gameEnded` | The match is over | `.reason` (`"time"`, `"gifts"` or `"aborted"`), `.winner` |
 
 ```python
-@car.on("hit")
-async def shot_at(e):
-    if e.side == "left":
-        await car.turn(-90)      # face the shooter
+@car.on("blocked")
+async def bumped(e):
+    if e.by == "agent":
+        print("a car from team", e.team, "is in the way")
 ```
+
+For reacting to `hit` while moving, see [Reacting in the middle of an action](#reacting-in-the-middle-of-an-action).
 
 ## 8. Rules
 
