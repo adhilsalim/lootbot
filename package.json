@@ -13,7 +13,8 @@
     "build": "npm run build -w web",
     "test": "vitest run",
     "typecheck": "tsc -p shared && tsc -p server && tsc -p web",
-    "host-agent": "tsx server/src/hostAgent.ts"
+    "host-agent": "tsx server/src/hostAgent.ts",
+    "demo": "npm run start -w server -- --demo"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
