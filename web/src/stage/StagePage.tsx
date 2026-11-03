@@ -152,7 +152,7 @@ export function StagePage() {
           {world ? formatTime(world.timeLeft) : rules ? formatTime(rules.matchSeconds) : "--:--"}
         </div>
         <div className="stage-gifts">
-          🎁 {world ? `${world.giftsLeft} / ${world.totalGifts}` : map ? map.gifts.length : "-"}
+          Gifts left {world ? `${world.giftsLeft} / ${world.totalGifts}` : map ? map.gifts.length : "-"}
           {!connected && <span className="offline"> · reconnecting…</span>}
         </div>
       </header>
@@ -188,7 +188,7 @@ export function StagePage() {
 
       {!soundOn && (
         <button className="enable-sound" onClick={() => engine.enable().then(() => setSoundOn(engine.enabled))}>
-          🔊 Enable sound
+          Enable sound
         </button>
       )}
 

@@ -81,6 +81,7 @@ input, select {
 .score-row .icon.dot { display: inline-block; }
 .score-row .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .score-row .gifts { font-weight: 700; font-size: 18px; }
+.score-row .gifts small { font-weight: 400; font-size: 12px; color: var(--muted); }
 .score-row .bars { background: #0006; height: 6px; border-radius: 3px; overflow: hidden; }
 .score-row .life { background: var(--green); height: 100%; transition: width 0.2s; }
 .score-row .ammo { font-size: 12px; color: var(--muted); }
@@ -149,9 +150,9 @@ table.teams td.actions button { margin-left: 6px; }
 .toast.info { border-left: 4px solid var(--green); }
 .builder { display: grid; grid-template-columns: 240px 1fr 320px; gap: 16px; align-items: start; }
 .map-list ul { list-style: none; padding: 0; margin: 10px 0 0; }
-.map-list li { display: flex; align-items: center; border-radius: 6px; }
+.map-list li { display: flex; flex-direction: column; align-items: stretch; border-radius: 6px; padding-bottom: 6px; }
 .map-list li.active { background: var(--panel-2); }
-.map-list .row-actions { display: flex; gap: 2px; }
+.map-list .row-actions { display: flex; gap: 4px; padding: 0 6px; }
 .map-list .row-actions button { padding: 2px 6px; font-size: 12px; }
 button.link { background: none; border: none; text-align: left; flex: 1; padding: 6px; }
 button.wide { width: 100%; }

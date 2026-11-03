@@ -16,11 +16,11 @@ export function Scoreboard({ world, profiles }: { world: WorldView | null; profi
               {c.team}
               {!c.connected && <span className="muted"> (offline)</span>}
             </span>
-            <span className="gifts">🎁 {c.gifts}</span>
+            <span className="gifts">{c.gifts} <small>{c.gifts === 1 ? "gift" : "gifts"}</small></span>
             <div className="bars">
               <div className="life" style={{ width: `${(c.life / c.maxLife) * 100}%` }} />
             </div>
-            <span className="ammo">• {c.ammo}</span>
+            <span className="ammo">{c.ammo} ammo</span>
           </div>
         );
       })}

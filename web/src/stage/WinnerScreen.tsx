@@ -21,7 +21,7 @@ export function WinnerScreen({ winner, profile }: Props) {
         {profile?.icon ? <img className="winner-icon" src={profile.icon} alt="" /> : <span className="winner-icon dot-lg" style={{ background: color }} />}
         {winner.team}
       </div>
-      <div className="winner-gifts">🎁 {winner.gifts} {winner.gifts === 1 ? "gift" : "gifts"}</div>
+      <div className="winner-gifts">{winner.gifts} {winner.gifts === 1 ? "gift" : "gifts"}</div>
       {(profile?.driver || (profile?.passengers.length ?? 0) > 0) && (
         <div className="crew">
           {profile?.driver && (

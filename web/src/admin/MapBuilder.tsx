@@ -213,9 +213,8 @@ export function MapBuilder({ adminKey, state, send, toast }: Props) {
                 {m.name} <span className="muted">{m.width}×{m.height}</span>
               </button>
               <span className="row-actions">
-                <button title="Duplicate" onClick={() => mapAction(`/api/admin/maps/${m.file}/duplicate`)}>⧉</button>
+                <button onClick={() => mapAction(`/api/admin/maps/${m.file}/duplicate`)}>Copy</button>
                 <button
-                  title="Rename"
                   onClick={async () => {
                     const n = prompt("New name", m.name);
                     if (!n) return;
@@ -226,17 +225,16 @@ export function MapBuilder({ adminKey, state, send, toast }: Props) {
                     }
                   }}
                 >
-                  ✎
+                  Rename
                 </button>
                 <button
-                  title="Delete"
                   className="danger"
                   onClick={async () => {
                     if (!confirm(`Delete ${m.name}?`)) return;
                     if (await mapAction(`/api/admin/maps/${m.file}`, "DELETE")) if (file === m.file) setFile(null);
                   }}
                 >
-                  ✕
+                  Delete
                 </button>
               </span>
             </li>
@@ -247,7 +245,7 @@ export function MapBuilder({ adminKey, state, send, toast }: Props) {
       <section className="card editor">
         <div className="editor-head">
           <input className="map-name" value={name} onChange={(e) => (setName(e.target.value), setDirty(true))} />
-          <span className="muted">{file ?? "unsaved"}{dirty && " •"}</span>
+          <span className="muted">{file ?? "unsaved"}{dirty && " (unsaved changes)"}</span>
           <span className="spacer" />
           <label className="muted">Size</label>
           <SizeInput value={grid.width} onChange={(w) => edit(resizeGrid(grid, w, grid.height))} />
@@ -280,12 +278,12 @@ export function MapBuilder({ adminKey, state, send, toast }: Props) {
               if (f) send({ type: "testRun", file: f });
             }}
           >
-            Test run ▶
+            Test run
           </button>
         </div>
         {validation && (
           <div className={`validation ${validation.ok ? "ok" : "bad"}`}>
-            <b>{validation.ok ? `✓ Valid for ${expectedTeams} teams` : "✕ Problems"}</b>
+            <b>{validation.ok ? `Valid for ${expectedTeams} teams` : "Problems"}</b>
             <ul>
               {validation.errors.map((e) => <li key={e}>{e}</li>)}
               {validation.warnings.map((w) => <li key={w} className="warn">{w}</li>)}

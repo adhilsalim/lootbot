@@ -34,7 +34,7 @@ export function StatsScreen({ stats, profiles }: Props) {
             const p = profiles.get(s.team);
             return (
               <tr key={s.team} style={{ animationDelay: `${(stats.length - i) * 0.4}s` }}>
-                <td className="rank">{s.rank === 1 ? "🏆" : s.rank}</td>
+                <td className="rank">{s.rank}</td>
                 <td className="left team">
                   {p?.icon ? <img src={p.icon} alt="" /> : <span className="dot-lg" style={{ background: p?.color }} />}
                   {s.team}

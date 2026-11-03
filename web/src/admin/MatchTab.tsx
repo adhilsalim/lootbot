@@ -28,7 +28,7 @@ export function MatchTab({ state, send, adminKey }: Props) {
             ))}
             <div className="label">Join code</div>
             <div className="big mono accent">{state.joinCode}</div>
-            <a href="/stage" target="_blank" rel="noreferrer">Open stage screen ↗</a>
+            <a href="/stage" target="_blank" rel="noreferrer">Open stage screen</a>
           </div>
         </div>
       </section>
@@ -44,7 +44,7 @@ export function MatchTab({ state, send, adminKey }: Props) {
                 <tr key={s.team}>
                   <td>{s.rank}</td>
                   <td><b>{s.team}</b></td>
-                  <td>🎁 {s.gifts}</td>
+                  <td>{s.gifts} {s.gifts === 1 ? "gift" : "gifts"}</td>
                   <td className="muted">{s.deaths} deaths · {s.hitsLanded} hits · {s.kills} kills</td>
                 </tr>
               ))}
@@ -140,7 +140,7 @@ function PendingAgent({ agent, send }: { agent: AgentInfo; send: Props["send"] }
       {clips.length > 0 && (
         <div className="clips">
           {clips.map(([slot, url]) => (
-            <button key={slot} onClick={() => new Audio(url).play()}>▶ {slot}</button>
+            <button key={slot} onClick={() => new Audio(url).play()}>Play {slot}</button>
           ))}
         </div>
       )}
