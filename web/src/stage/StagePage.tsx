@@ -5,6 +5,7 @@ import { MazeCanvas } from "./MazeCanvas";
 import { Scoreboard } from "./Scoreboard";
 import { StatsScreen } from "./StatsScreen";
 import { WinnerScreen } from "./WinnerScreen";
+import { IntroScreen } from "./IntroScreen";
 
 /** How long the stats table shows before the winner screen, unless the host skips ahead. */
 const STATS_MS = 12000;
@@ -18,6 +19,7 @@ export function StagePage() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [stats, setStats] = useState<{ stats: RankedStats[]; winner: string | null } | null>(null);
   const [showWinner, setShowWinner] = useState(false);
+  const [intro, setIntro] = useState<{ teams: string[]; perTeamMs: number; startedAt: number } | null>(null);
 
   useEffect(() => {
     if (!stats) return setShowWinner(false);
@@ -51,6 +53,9 @@ export function StagePage() {
       case "world":
         setWorld(msg.world);
         break;
+      case "intro":
+        setIntro({ teams: msg.teams, perTeamMs: msg.perTeamMs, startedAt: Date.now() - (msg.elapsedMs ?? 0) });
+        break;
       case "countdown":
         setCountdown(msg.value);
         if (msg.value === 0) setTimeout(() => setCountdown(null), 900);
@@ -65,13 +70,20 @@ export function StagePage() {
   });
 
   const profileMap = useMemo(() => new Map(profiles.map((p) => [p.team, p])), [profiles]);
+
+  // Load every team's photos as soon as they are known, so nothing loads mid-match.
+  useEffect(() => {
+    for (const p of profiles) {
+      for (const src of [p.icon, p.driver, ...p.passengers]) if (src) new Image().src = src;
+    }
+  }, [profiles]);
   const tickMs = 1000 / (rules?.tickRate ?? 10);
 
   return (
     <div className="stage">
       <header className="stage-top">
         <div className="stage-title">{map?.name ?? "Lootbot"}</div>
-        <div className={`stage-timer ${world && world.timeLeft <= 30 ? "low" : ""}`}>
+        <div className={`stage-timer ${world && world.timeLeft <= 30 && (stage === "running" || stage === "paused") ? "low" : ""}`}>
           {world ? formatTime(world.timeLeft) : rules ? formatTime(rules.matchSeconds) : "--:--"}
         </div>
         <div className="stage-gifts">
@@ -88,6 +100,11 @@ export function StagePage() {
             <div className="stage-waiting">Waiting for the host to pick a map…</div>
           )}
           {stage === "paused" && <div className="overlay banner">Paused</div>}
+          {stage === "intro" && intro && countdown === null && (
+            <div className="overlay intro-overlay">
+              <IntroScreen {...intro} profiles={profileMap} />
+            </div>
+          )}
           {countdown !== null && (
             <div className="overlay countdown" key={countdown}>{countdown > 0 ? countdown : "GO!"}</div>
           )}

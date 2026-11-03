@@ -17,6 +17,8 @@ import { AdminHub } from "./adminHub.js";
 import { MapStore } from "./maps.js";
 import { ConnectionTester, type TestOptions } from "./connectionTest.js";
 import { listMatches, loadMeta, MatchLogger, statsCsv } from "./matchLog.js";
+import multer from "multer";
+import { CLIP_FIELDS, IMAGE_FIELDS, IMAGE_MAX_BYTES, ProfileError, ProfileStore, fieldLabel, toView } from "./profiles.js";
 
 export const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -107,6 +109,8 @@ export async function createApp(opts: AppOptions = {}) {
     send({ type: "hello", stage: match.stage, map: match.map, rules: match.rules, profiles: [...profiles.values()] });
     send({ type: "volume", value: volume });
     if (match.world) send({ type: "world", world: match.world.view() });
+    const intro = match.introMessage();
+    if (intro) send(intro);
     if (match.stage === "stats" && match.lastStats) {
       send({ type: "stats", stats: match.lastStats, winner: match.lastStats[0]?.team ?? null });
     }
@@ -121,7 +125,12 @@ export async function createApp(opts: AppOptions = {}) {
   };
 
   // ---------- agents ----------
+  const profileStore = new ProfileStore(dirs.uploads);
   lobby.defaultProfile = (team) => ({ team, icon: null, driver: null, passengers: [], clips: {}, color: "#888" });
+  lobby.resolveProfile = async (id, team) => {
+    const p = await profileStore.get(id);
+    return p ? { profile: toView(p, team, "#888"), notes: p.notes } : null;
+  };
   lobby.on("accepted", (a) => {
     if (a.profile) a.profile.color = colorFor(colorIndex++);
   });
@@ -332,6 +341,32 @@ export async function createApp(opts: AppOptions = {}) {
     res.json({ ok: true });
   }));
 
+  // Team profile uploads (before joining).
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: IMAGE_MAX_BYTES, files: IMAGE_FIELDS.length + CLIP_FIELDS.length },
+  }).fields([...IMAGE_FIELDS, ...CLIP_FIELDS].map((name) => ({ name, maxCount: 1 })));
+  ex.post("/api/profile", (req, res) => {
+    upload(req, res, async (err: unknown) => {
+      if (err) {
+        const e = err as multer.MulterError;
+        const msg =
+          e.code === "LIMIT_FILE_SIZE" ? `${fieldLabel(e.field ?? "")} is over the 1 MB limit.`
+          : e.code === "LIMIT_UNEXPECTED_FILE" ? `Unknown upload field "${e.field}".`
+          : e.message;
+        return res.status(400).json({ error: msg, errors: [msg] });
+      }
+      const files = Object.values((req.files ?? {}) as Record<string, Express.Multer.File[]>).flat();
+      try {
+        const p = await profileStore.create(String(req.body?.teamName ?? ""), files.map((f) => ({ field: f.fieldname, name: f.originalname, size: f.size, buffer: f.buffer })));
+        res.json({ id: p.id, notes: p.notes, profile: toView(p, p.teamName, "#888") });
+      } catch (e) {
+        const errors = e instanceof ProfileError ? e.errors : [(e as Error).message];
+        res.status(400).json({ error: errors.join(" "), errors });
+      }
+    });
+  });
+
   // Match logs and stats.
   ex.get("/api/admin/matches", admin.guard, wrap(async (_req, res) => res.json(await listMatches(dirs.matches))));
   ex.get("/api/admin/stats.csv", admin.guard, wrap(async (req, res) => {
@@ -362,6 +397,7 @@ export async function createApp(opts: AppOptions = {}) {
     tester,
     runTest,
     logger,
+    profileStore,
     maps,
     profiles,
     port,

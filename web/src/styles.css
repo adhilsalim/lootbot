@@ -207,3 +207,8 @@ a.button:hover { border-color: var(--accent); }
 .confetti { position: absolute; inset: 0; pointer-events: none; }
 .confetti i { position: absolute; top: -20px; width: 10px; height: 18px; border-radius: 2px; animation: fall 4.2s linear infinite; opacity: 0.85; }
 @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+.intro-overlay { background: #0b0d13e6; }
+.intro { display: flex; flex-direction: column; align-items: center; gap: 18px; animation: slidein 0.5s both; }
+.intro-count { color: var(--muted); font-size: 22px; letter-spacing: 4px; text-transform: uppercase; }
+.intro-name { font-size: 90px; font-weight: 900; display: flex; align-items: center; gap: 26px; color: #fff; text-shadow: 0 0 40px var(--team); }
+.intro-icon { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 6px solid var(--team); }

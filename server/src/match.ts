@@ -76,6 +76,7 @@ export class Match extends EventEmitter<MatchEvents> {
   private tickTimer: NodeJS.Timeout | null = null;
   private stageTimers: NodeJS.Timeout[] = [];
   private nextTickAt = 0;
+  private introStartedAt = 0;
   private timing: IntroTiming;
 
   constructor(timing: Partial<IntroTiming> = {}) {
@@ -129,9 +130,22 @@ export class Match extends EventEmitter<MatchEvents> {
     for (const t of teams) this.world.addCar(t.carId, t.team);
     this.setStage("intro");
     this.emit("stage", { type: "world", world: this.world.view() });
+    this.introStartedAt = Date.now();
+    this.emit("stage", this.introMessage()!);
 
     const introMs = this.timing.perTeamMs * teams.length;
     this.later(introMs, () => this.countdown(3));
+  }
+
+  /** The intro message for a stage screen, or null outside the intro. */
+  introMessage(): ServerToStage | null {
+    if (this.stage !== "intro") return null;
+    return {
+      type: "intro",
+      teams: this.teams.map((t) => t.team),
+      perTeamMs: this.timing.perTeamMs,
+      elapsedMs: Date.now() - this.introStartedAt,
+    };
   }
 
   /** Skip the rest of the intro and go straight to the countdown. */

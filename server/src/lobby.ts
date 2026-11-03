@@ -37,7 +37,10 @@ export interface LobbyEvents {
 }
 
 /** Looks up an uploaded profile by id when an agent joins (provided by the uploads module). */
-export type ProfileResolver = (id: string, team: string) => { profile: TeamProfileView; notes: string[] } | null;
+export type ProfileResolver = (
+  id: string,
+  team: string,
+) => Promise<{ profile: TeamProfileView; notes: string[] } | null>;
 
 const MAX_TEAM_NAME = 20;
 const newToken = () => `t_${randomBytes(16).toString("hex")}`;
@@ -56,7 +59,7 @@ export class Lobby extends EventEmitter<LobbyEvents> {
   readonly agents = new Map<string, AgentRecord>();
   /** Sockets of agents in the hidden practice room; their actions go to the tester. */
   readonly practice = new Set<string>();
-  resolveProfile: ProfileResolver = () => null;
+  resolveProfile: ProfileResolver = async () => null;
   /** Default profile for a team that uploaded none (colour only). */
   defaultProfile: (team: string) => TeamProfileView = (team) => ({ team, icon: null, driver: null, passengers: [], clips: {}, color: "#888" });
 
@@ -160,10 +163,18 @@ export class Lobby extends EventEmitter<LobbyEvents> {
       profileNotes: [],
       test: { status: "untested", avgMs: null, maxMs: null, detail: [] },
     };
-    const resolved = agent.profileId ? this.resolveProfile(agent.profileId, team) : null;
-    if (agent.profileId && !resolved) agent.profileNotes.push("Profile upload not found; using defaults.");
-    agent.profile = resolved?.profile ?? this.defaultProfile(team);
-    if (resolved) agent.profileNotes.push(...resolved.notes);
+    agent.profile = this.defaultProfile(team);
+    if (agent.profileId) {
+      // Uploaded files are looked up on disk; the preview fills in when ready.
+      this.resolveProfile(agent.profileId, team).then((resolved) => {
+        if (!resolved) agent.profileNotes.push("Profile upload not found; using defaults.");
+        else {
+          agent.profile = { ...resolved.profile, color: agent.profile?.color ?? resolved.profile.color };
+          agent.profileNotes.push(...resolved.notes);
+        }
+        this.emit("change");
+      });
+    }
 
     this.agents.set(agent.id, agent);
     this.sendWs(ws, { type: "joinResult", accepted: false, status: "pending", reason: "Waiting for the host to accept." });

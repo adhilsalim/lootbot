@@ -62,6 +62,8 @@ export interface TeamProfileView {
   driver: string | null;
   passengers: string[];
   clips: Partial<Record<ClipSlot, string>>;
+  /** Clip lengths in seconds, so the audio queue can pace itself without the stage. */
+  clipDurations?: Partial<Record<ClipSlot, number>>;
   color: string;
 }
 
@@ -93,6 +95,7 @@ export type ServerToStage =
   | { type: "map"; map: MapFile | null; rules: Rules | null }
   | { type: "profiles"; profiles: TeamProfileView[] }
   | { type: "world"; world: WorldView }
+  | { type: "intro"; teams: string[]; perTeamMs: number; elapsedMs?: number }
   | { type: "countdown"; value: number }
   | { type: "stats"; stats: RankedStats[]; winner: string | null }
   | { type: "showWinner" }
