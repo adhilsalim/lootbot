@@ -212,3 +212,26 @@ a.button:hover { border-color: var(--accent); }
 .intro-count { color: var(--muted); font-size: 22px; letter-spacing: 4px; text-transform: uppercase; }
 .intro-name { font-size: 90px; font-weight: 900; display: flex; align-items: center; gap: 26px; color: #fff; text-shadow: 0 0 40px var(--team); }
 .intro-icon { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 6px solid var(--team); }
+
+/* ---------- audio ---------- */
+.enable-sound { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 100; font-size: 40px; padding: 30px 60px; border-radius: 20px; background: var(--accent); color: #1a1400; font-weight: 800; box-shadow: 0 10px 60px #000c; }
+.now-playing-bar { display: flex; align-items: center; gap: 16px; padding: 0 20px; background: #0d1017; min-height: 56px; }
+.now-playing { flex: 1; display: flex; align-items: center; gap: 14px; opacity: 0; transform: translateY(-6px); transition: all 0.25s; }
+.now-playing.on { opacity: 1; transform: none; }
+.now-playing.p1 .np-text { color: #ff8a7a; }
+.np-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; }
+.np-teams { display: flex; align-items: center; gap: 6px; }
+.np-pair { display: inline-flex; align-items: center; gap: 6px; }
+.np-arrow { color: var(--muted); font-size: 22px; }
+.np-team { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 20px; border: 2px solid transparent; opacity: 0.55; transition: all 0.2s; }
+.np-team.active { opacity: 1; background: #ffffff14; box-shadow: 0 0 18px #ffff9955; }
+.np-team img, .np-dot { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; }
+.np-text { font-size: 22px; font-weight: 700; }
+.wave { display: inline-flex; gap: 3px; align-items: center; height: 28px; }
+.wave i { width: 4px; height: 100%; background: var(--accent); border-radius: 2px; animation: wave 0.8s ease-in-out infinite alternate; }
+@keyframes wave { from { transform: scaleY(0.2); } to { transform: scaleY(1); } }
+.up-next { display: flex; align-items: center; gap: 8px; }
+.un-item { display: inline-flex; gap: 2px; padding: 3px; border-radius: 18px; background: var(--panel-2); }
+.un-item.p1 { box-shadow: inset 0 0 0 2px var(--red); }
+.un-item.p2 { box-shadow: inset 0 0 0 2px var(--amber); }
+.un-item img, .un-item .np-dot { width: 26px; height: 26px; font-size: 12px; }

@@ -76,6 +76,8 @@ export interface AudioClipRef {
   url: string;
   /** -1 (left) … 1 (right), from the car's x position when the entry was created. */
   pan: number;
+  /** Seconds, if known from the upload. */
+  duration?: number;
 }
 
 export interface AudioEntry {

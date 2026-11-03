@@ -18,6 +18,7 @@ import { MapStore } from "./maps.js";
 import { ConnectionTester, type TestOptions } from "./connectionTest.js";
 import { listMatches, loadMeta, MatchLogger, statsCsv } from "./matchLog.js";
 import multer from "multer";
+import { AudioQueue, entriesFromEvents } from "./audioQueue.js";
 import { CLIP_FIELDS, IMAGE_FIELDS, IMAGE_MAX_BYTES, ProfileError, ProfileStore, fieldLabel, toView } from "./profiles.js";
 
 export const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -108,12 +109,32 @@ export async function createApp(opts: AppOptions = {}) {
     const send = (m: ServerToStage) => ws.send(JSON.stringify(m));
     send({ type: "hello", stage: match.stage, map: match.map, rules: match.rules, profiles: [...profiles.values()] });
     send({ type: "volume", value: volume });
+    send({ type: "audioQueue", upNext: audio.upNext });
     if (match.world) send({ type: "world", world: match.world.view() });
     const intro = match.introMessage();
     if (intro) send(intro);
     if (match.stage === "stats" && match.lastStats) {
       send({ type: "stats", stats: match.lastStats, winner: match.lastStats[0]?.team ?? null });
     }
+  });
+
+  // ---------- audio queue ----------
+  const audio = new AudioQueue({
+    send: broadcastStage,
+    onPlay: (entry) => logger.audio(match.world?.tick ?? 0, entry),
+  });
+  match.on("tick", (world, _actions, events) => {
+    const entries = entriesFromEvents(events, (id) => world.getCar(id)?.team, (t) => profiles.get(t), world.map.width, world.tick);
+    for (const e of entries) audio.add(e);
+  });
+  match.on("pause", (paused) => (paused ? audio.pause() : audio.resume()));
+  match.on("abort", () => audio.clear());
+  match.on("stageChange", (stage) => {
+    // The stats and winner screens play only the win clip.
+    if (stage === "stats" || stage === "lobby") audio.clear();
+  });
+  stageHandlers.push((_ws, msg) => {
+    if (msg?.type === "audioDone" && typeof msg.id === "number") audio.done(msg.id);
   });
 
   /** Rebuild the stage's team list from accepted agents (or test-run bots). */
@@ -398,6 +419,7 @@ export async function createApp(opts: AppOptions = {}) {
     runTest,
     logger,
     profileStore,
+    audio,
     maps,
     profiles,
     port,
