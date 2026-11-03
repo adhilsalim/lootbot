@@ -1,6 +1,6 @@
 # Lootbot
 
-A programming game: teams write code that drives a robocar through a 2D maze, collecting gifts and shooting rivals. The game runs on the host's laptop; teams connect over local Wi-Fi. Full design: [docs/context.md](docs/context.md).
+A programming game: teams write code that drives a robocar through a 2D maze, collecting gifts and shooting rivals. The game runs on the host's laptop; teams connect over local Wi-Fi.
 
 ## Setup (host laptop)
 

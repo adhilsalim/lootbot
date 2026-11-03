@@ -115,4 +115,4 @@ Driving over an item does not pick it up. Stand on its cell and call the matchin
 
 ## Without the kit
 
-Any language with a WebSocket client can play. Connect to `ws://<server>/agent` and exchange JSON messages; see `docs/context.md` ("Message format") in the game repo.
+Any language with a WebSocket client can play. Connect to `ws://<server>/agent` and exchange JSON messages; the message types are defined in `shared/src/protocol.ts` in the game repo.
