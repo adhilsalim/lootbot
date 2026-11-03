@@ -11,6 +11,11 @@ interface Props {
   glowTeam?: string | null;
 }
 
+/** How long a shot stays on screen. */
+const SHOT_MS = 650;
+
+interface ShotFx { from: { x: number; y: number }; to: { x: number; y: number }; hit: boolean; at: number }
+
 const COLORS = { floor: "#1b1f2a", grid: "#232836", wall: "#5b6478", wallTop: "#7a849b" };
 
 /** Draws the maze, items, cars and shots on a canvas that fills its container. */
@@ -19,6 +24,8 @@ export function MazeCanvas({ map, world, profiles, tickMs, glowTeam }: Props) {
   const prev = useRef<{ world: WorldView | null; at: number }>({ world: null, at: 0 });
   const cur = useRef<{ world: WorldView | null; at: number }>({ world: null, at: 0 });
   const images = useRef(new Map<string, HTMLImageElement>());
+  /** Recent shots, kept for SHOT_MS so the audience can see them. */
+  const shots = useRef<ShotFx[]>([]);
   const glow = useRef(glowTeam);
   glow.current = glowTeam;
 
@@ -27,6 +34,8 @@ export function MazeCanvas({ map, world, profiles, tickMs, glowTeam }: Props) {
     if (world && world.tick !== cur.current.world?.tick) {
       prev.current = cur.current.world && world.tick === cur.current.world.tick + 1 ? cur.current : { world, at: performance.now() };
       cur.current = { world, at: performance.now() };
+      const at = performance.now();
+      for (const s of world.shots) shots.current.push({ ...s, at });
     }
   }, [world]);
 
@@ -132,17 +141,50 @@ export function MazeCanvas({ map, world, profiles, tickMs, glowTeam }: Props) {
         });
       }
 
-      // Shots fade out over one tick.
-      const fade = 1 - t;
-      if (fade > 0) {
-        for (const s of wv.shots) {
-          ctx.strokeStyle = s.hit ? `rgba(255,80,80,${fade})` : `rgba(255,230,120,${fade})`;
-          ctx.lineWidth = Math.max(2, cell * 0.08);
+      // Shots: muzzle flash, a tracer that fades, and a burst where the bullet stopped.
+      shots.current = shots.current.filter((s) => now - s.at < SHOT_MS);
+      for (const s of shots.current) {
+        const age = (now - s.at) / SHOT_MS;
+        const fade = 1 - age;
+        const fx = s.from.x * cell + cell / 2;
+        const fy = s.from.y * cell + cell / 2;
+        const tx = s.to.x * cell + cell / 2;
+        const ty = s.to.y * cell + cell / 2;
+        const rgb = s.hit ? "255,70,60" : "255,225,110";
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.shadowColor = `rgb(${rgb})`;
+        ctx.shadowBlur = cell * 0.5;
+        ctx.strokeStyle = `rgba(${rgb},${fade})`;
+        ctx.lineWidth = Math.max(3, cell * 0.14) * (0.4 + fade * 0.6);
+        ctx.beginPath();
+        ctx.moveTo(fx, fy);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(255,255,255,${fade})`;
+        ctx.lineWidth = Math.max(1, cell * 0.04);
+        ctx.stroke();
+        // Muzzle flash, quick.
+        if (age < 0.3) {
+          ctx.fillStyle = `rgba(255,240,180,${1 - age / 0.3})`;
           ctx.beginPath();
-          ctx.moveTo(s.from.x * cell + cell / 2, s.from.y * cell + cell / 2);
-          ctx.lineTo(s.to.x * cell + cell / 2, s.to.y * cell + cell / 2);
-          ctx.stroke();
+          ctx.arc(fx, fy, cell * (0.35 + age), 0, Math.PI * 2);
+          ctx.fill();
         }
+        // Impact: an expanding ring, bigger and red on a hit.
+        const r = cell * (s.hit ? 0.3 + age * 0.9 : 0.15 + age * 0.4);
+        ctx.strokeStyle = `rgba(${rgb},${fade})`;
+        ctx.lineWidth = Math.max(2, cell * 0.1) * fade;
+        ctx.beginPath();
+        ctx.arc(tx, ty, r, 0, Math.PI * 2);
+        ctx.stroke();
+        if (s.hit && age < 0.5) {
+          ctx.fillStyle = `rgba(255,80,60,${0.55 * (1 - age / 0.5)})`;
+          ctx.beginPath();
+          ctx.arc(tx, ty, cell * 0.55, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
       }
     };
     draw();
